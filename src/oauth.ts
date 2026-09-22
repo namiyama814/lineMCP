@@ -67,8 +67,10 @@ async function githubCallback(request: Request, env: Env): Promise<Response> {
 	const code = url.searchParams.get("code");
 	if (!state || !code) return new Response("Missing GitHub OAuth response", { status: 400 });
 	const pending = await env.OAUTH_KV.get<PendingAuthorization>(`mcp-auth:${state}`, "json");
+	const adminLogin = await env.OAUTH_KV.get(`admin-auth:${state}`);
 	await env.OAUTH_KV.delete(`mcp-auth:${state}`);
-	if (!pending) return new Response("GitHub authorization session expired", { status: 400 });
+	await env.OAUTH_KV.delete(`admin-auth:${state}`);
+	if (!pending && !adminLogin) return new Response("GitHub authorization session expired", { status: 400 });
 	const tokenResponse = await fetch(GITHUB_TOKEN_URL, {
 		method: "POST",
 		headers: { accept: "application/json", "content-type": "application/json" },
@@ -79,6 +81,18 @@ async function githubCallback(request: Request, env: Env): Promise<Response> {
 	const userResponse = await fetch(GITHUB_USER_URL, { headers: { authorization: `Bearer ${token.access_token}`, "user-agent": "line-mcp" } });
 	const user = await userResponse.json<GitHubUser>();
 	if (!userResponse.ok || user.login !== env.ALLOWED_GITHUB_LOGIN) return new Response("This GitHub user is not allowed to access this MCP server", { status: 403 });
+	if (adminLogin) {
+		const session = crypto.randomUUID();
+		await env.OAUTH_KV.put(`admin-session:${session}`, user.login, { expirationTtl: 600 });
+		return new Response(null, {
+			status: 302,
+			headers: {
+				location: "/admin/login",
+				"set-cookie": `line_mcp_admin=${session}; Path=/admin; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
+			},
+		});
+	}
+	if (!pending) return new Response("GitHub authorization session expired", { status: 400 });
 	const original = new URL(`${origin(request)}/authorize${pending.search}`);
 	const authRequest = await env.OAUTH_PROVIDER.parseAuthRequest(new Request(original));
 	const completed = await env.OAUTH_PROVIDER.completeAuthorization({
