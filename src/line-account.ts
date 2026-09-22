@@ -8,6 +8,13 @@ type State = Record<string, Storage["Value"]>;
 type Draft = { chatMid: string; text: string; actor: string; expiresAt: number; used: boolean };
 type Audit = { at: number; actor: string; action: string; chatHash?: string; textLength?: number; result: "ok" | "error" };
 
+/** LINE explicitly confirms that no message was accepted and a group E2EE key must be recreated. */
+export function needsE2EEGroupKeyRecreate(error: unknown): boolean {
+	if (typeof error !== "object" || error === null) return false;
+	const record = error as { message?: unknown; data?: { code?: unknown } };
+	return record.data?.code === "E2EE_RECREATE_GROUP_KEY" || record.message === "E2EE_RECREATE_GROUP_KEY";
+}
+
 class DurableStorage extends BaseStorage {
 	constructor(private readonly state: DurableObjectStorage, private readonly secret: string) {
 		super();
@@ -122,11 +129,21 @@ export class LineAccount implements DurableObject {
 		if (recent.length >= 20) throw new Error("Send rate limit reached. Try again later.");
 		await this.ctx.storage.delete(key);
 		try {
-			const sent = await (await this.client()).getChat(draft.chatMid).then((chat) => chat.sendMessage({ text: draft.text, e2ee: true }));
+			const client = await this.client();
+			let messageId: string;
+			try {
+				messageId = (await client.getChat(draft.chatMid).then((chat) => chat.sendMessage({ text: draft.text, e2ee: true }))).raw.id;
+			} catch (error) {
+				if (!needsE2EEGroupKeyRecreate(error)) throw error;
+				// LINE rejected the original request before accepting it. Register a
+				// fresh group key once, then encrypt and retry the same draft.
+				await client.base.e2ee.tryRegisterE2EEGroupKey(draft.chatMid);
+				messageId = (await client.base.talk.sendMessage({ to: draft.chatMid, text: draft.text, e2ee: true })).id;
+			}
 			recent.push(Date.now());
 			await this.ctx.storage.put("send-timestamps", recent);
 			await this.audit({ actor, action: "send", chatHash: await hashForAudit(draft.chatMid), textLength: draft.text.length, result: "ok" });
-			return { message_id: sent.raw.id, chat_mid: draft.chatMid, sent: true };
+			return { message_id: messageId, chat_mid: draft.chatMid, sent: true };
 		} catch (error) {
 			await this.audit({ actor, action: "send", chatHash: await hashForAudit(draft.chatMid), textLength: draft.text.length, result: "error" });
 			throw error;

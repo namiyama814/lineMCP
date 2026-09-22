@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decryptJson, encryptJson } from "../src/crypto";
-import { LineAccount } from "../src/line-account";
+import { LineAccount, needsE2EEGroupKeyRecreate } from "../src/line-account";
 
 const key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
@@ -20,6 +20,12 @@ function account() {
 }
 
 describe("send confirmation state", () => {
+	it("recognizes only LINE's explicit group-key recreate error", () => {
+		expect(needsE2EEGroupKeyRecreate({ data: { code: "E2EE_RECREATE_GROUP_KEY" } })).toBe(true);
+		expect(needsE2EEGroupKeyRecreate({ message: "E2EE_RECREATE_GROUP_KEY" })).toBe(true);
+		expect(needsE2EEGroupKeyRecreate({ data: { code: "E2EE_RETRY_ENCRYPT" } })).toBe(false);
+	});
+
 	it("does not start password login when credential secrets are absent", async () => {
 		const { account: instance } = account();
 		const response = await instance.fetch(new Request("https://do/admin/login/stream?method=password"));
