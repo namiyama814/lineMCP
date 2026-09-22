@@ -1,0 +1,28 @@
+{
+  "name": "line-mcp-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "check": "npm run build && wrangler check",
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^0.10.3",
+    "@evex/linejs": "npm:@jsr/evex__linejs@^3.4.2",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "agents": "^0.24.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260922.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.41.0"
+  }
+}

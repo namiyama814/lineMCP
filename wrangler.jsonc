@@ -1,0 +1,55 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "line-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-22",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [
+      { "name": "LINE_ACCOUNT", "class_name": "LineAccount" }
+    ]
+  },
+  "kv_namespaces": [
+    { "binding": "OAUTH_KV", "id": "REPLACE_WITH_OAUTH_KV_NAMESPACE_ID" }
+  ],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["LineAccount"] }
+  ],
+  "vars": {
+    "ALLOWED_GITHUB_LOGIN": "CHANGE_ME",
+    "ENVIRONMENT": "development"
+  },
+  "env": {
+    "staging": {
+      "name": "line-mcp-staging",
+      "durable_objects": {
+        "bindings": [
+          { "name": "LINE_ACCOUNT", "class_name": "LineAccount" }
+        ]
+      },
+      "kv_namespaces": [
+        { "binding": "OAUTH_KV", "id": "REPLACE_WITH_STAGING_OAUTH_KV_NAMESPACE_ID" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "ALLOWED_GITHUB_LOGIN": "CHANGE_ME"
+      }
+    },
+    "production": {
+      "name": "line-mcp",
+      "durable_objects": {
+        "bindings": [
+          { "name": "LINE_ACCOUNT", "class_name": "LineAccount" }
+        ]
+      },
+      "kv_namespaces": [
+        { "binding": "OAUTH_KV", "id": "REPLACE_WITH_PRODUCTION_OAUTH_KV_NAMESPACE_ID" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "ALLOWED_GITHUB_LOGIN": "CHANGE_ME"
+      }
+    }
+  }
+}
