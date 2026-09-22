@@ -44,7 +44,7 @@ export class LineAccount implements DurableObject {
 
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
-		if (url.pathname === "/admin/login/stream") return this.loginStream();
+		if (url.pathname === "/admin/login/stream") return this.loginStream(url.searchParams.get("method"));
 		if (request.method !== "POST") return Response.json({ error: "Not found" }, { status: 404 });
 		try {
 			const action = await request.json<AccountAction>();
@@ -61,7 +61,7 @@ export class LineAccount implements DurableObject {
 		base.on("update:authtoken", (token) => storage.set(".auth", token));
 		const token = await storage.get(".auth");
 		if (typeof token !== "string") {
-			if (requireLogin) throw new Error("LINE is not authenticated. Complete QR login in /admin/login.");
+			if (requireLogin) throw new Error("LINE is not authenticated. Complete email/password login in /admin/login.");
 			return new Client(base);
 		}
 		await base.loginProcess.login({ authToken: token });
@@ -137,17 +137,23 @@ export class LineAccount implements DurableObject {
 		entries.push({ ...entry, at: Date.now() });
 		await this.ctx.storage.put("audit", entries.slice(-500));
 	}
-	private loginStream(): Response {
+	private loginStream(method: string | null): Response {
+		if (method !== "password") return Response.json({ error: "Only password login is enabled." }, { status: 400 });
+		if (!this.env.LINE_EMAIL || !this.env.LINE_PASSWORD) {
+			return Response.json({ error: "LINE_EMAIL and LINE_PASSWORD must be configured as Cloudflare secrets." }, { status: 503 });
+		}
 		const stream = new TransformStream();
 		const writer = stream.writable.getWriter();
 		const emit = async (event: string, data: unknown) => writer.write(new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
 		this.ctx.waitUntil((async () => {
 			try {
 				const base = new BaseClient({ device: "DESKTOPWIN", storage: this.storage() });
-				base.on("qrcall", (url) => emit("qr", { url }));
 				base.on("pincall", (pin) => emit("pin", { pin }));
 				base.on("update:authtoken", (token) => this.storage().set(".auth", token));
-				await base.loginProcess.withQrCode();
+				await base.loginProcess.withPassword({
+					email: this.env.LINE_EMAIL,
+					password: this.env.LINE_PASSWORD,
+				});
 				await base.loginProcess.ready();
 				await emit("complete", { ok: true });
 			} catch (error) { await emit("error", { message: this.safeError(error) }); }

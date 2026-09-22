@@ -3,6 +3,9 @@ export interface Env {
 	ENVIRONMENT: string;
 	GITHUB_CLIENT_ID: string;
 	GITHUB_CLIENT_SECRET: string;
+	/** Stored as Cloudflare secrets; never accepted from an HTTP request. */
+	LINE_EMAIL: string;
+	LINE_PASSWORD: string;
 	LINE_STATE_ENCRYPTION_KEY: string;
 	OAUTH_KV: KVNamespace;
 	LINE_ACCOUNT: DurableObjectNamespace;

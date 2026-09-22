@@ -20,6 +20,13 @@ function account() {
 }
 
 describe("send confirmation state", () => {
+	it("does not start password login when credential secrets are absent", async () => {
+		const { account: instance } = account();
+		const response = await instance.fetch(new Request("https://do/admin/login/stream?method=password"));
+		expect(response.status).toBe(503);
+		expect(await response.json()).toMatchObject({ error: expect.stringContaining("LINE_EMAIL") });
+	});
+
 	it("creates an encrypted, one-time draft", async () => {
 		const { account: instance, storage } = account();
 		const response = await instance.fetch(new Request("https://do/internal", { method: "POST", body: JSON.stringify({ action: "prepare", chatMid: "c123", text: "hello", actor: "octocat" }) }));

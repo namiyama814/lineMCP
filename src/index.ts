@@ -18,7 +18,7 @@ async function allowedAdmin(request: Request, env: Env): Promise<boolean> {
 }
 
 function adminPage(): Response {
-	return new Response(`<!doctype html><html lang="ja"><meta charset="utf-8"><title>LINE MCP login</title><style>body{font:16px system-ui;max-width:44rem;margin:3rem auto;padding:0 1rem}img{max-width:20rem}pre{white-space:pre-wrap;color:#444}</style><h1>LINE MCP: QR ログイン</h1><p>この画面を開いたまま、表示される QR コードを本人の LINE アプリで読み取ってください。</p><div id="status">接続しています…</div><img id="qr" hidden alt="LINE QR code"><pre id="detail"></pre><script>const status=document.querySelector('#status'),qr=document.querySelector('#qr'),detail=document.querySelector('#detail');const events=new EventSource('/admin/login/stream');events.addEventListener('qr',e=>{const d=JSON.parse(e.data);qr.src=d.url;qr.hidden=false;status.textContent='QR コードを読み取ってください';});events.addEventListener('pin',e=>{status.textContent='LINE アプリで PIN を確認してください';detail.textContent=JSON.parse(e.data).pin;});events.addEventListener('complete',()=>{status.textContent='ログインが完了しました。この画面を閉じて MCP を接続できます。';events.close();});events.addEventListener('error',e=>{status.textContent='ログインに失敗しました。再読み込みして再試行してください。';detail.textContent=e.data||'';events.close();});</script></html>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+	return new Response(`<!doctype html><html lang="ja"><meta charset="utf-8"><title>LINE MCP login</title><style>body{font:16px system-ui;max-width:44rem;margin:3rem auto;padding:0 1rem}pre{white-space:pre-wrap;color:#444}</style><h1>LINE MCP: メールアドレス／パスワードでログイン</h1><p>Cloudflare に保存した LINE のメールアドレスとパスワードでログインします。必要になった場合は、表示された PIN を LINE アプリで確認してください。</p><div id="status">接続しています…</div><pre id="detail"></pre><script>const status=document.querySelector('#status'),detail=document.querySelector('#detail');const events=new EventSource('/admin/login/stream?method=password');events.addEventListener('pin',e=>{status.textContent='LINE アプリで PIN を確認してください';detail.textContent=JSON.parse(e.data).pin;});events.addEventListener('complete',()=>{status.textContent='ログインが完了しました。この画面を閉じて MCP を接続できます。';events.close();});events.addEventListener('error',e=>{status.textContent='ログインに失敗しました。設定を確認して再読み込みしてください。';detail.textContent=e.data||'';events.close();});</script></html>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
 
 async function adminHandler(request: Request, env: Env): Promise<Response> {
@@ -35,7 +35,7 @@ async function adminHandler(request: Request, env: Env): Promise<Response> {
 	}
 	if (!(await allowedAdmin(request, env))) return Response.redirect(new URL("/admin/github", url), 302);
 	if (url.pathname === "/admin/login") return adminPage();
-	if (url.pathname === "/admin/login/stream") return accountFetch(env, new Request("https://line-account/admin/login/stream"));
+	if (url.pathname === "/admin/login/stream") return accountFetch(env, new Request(`https://line-account${url.pathname}${url.search}`));
 	return new Response("Not found", { status: 404 });
 }
 

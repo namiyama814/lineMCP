@@ -23,12 +23,16 @@ draft, then consume its five-minute, one-time confirmation token.
    `https://<worker-domain>/oauth/github/callback`; the same app also secures
    `/admin/login`.
 3. Copy `.dev.vars.example` to `.dev.vars` for local development. For each
-   Cloudflare environment, set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and
-   `LINE_STATE_ENCRYPTION_KEY` using `wrangler secret put`.
+   Cloudflare environment, set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
+   `LINE_STATE_ENCRYPTION_KEY`, `LINE_EMAIL`, and `LINE_PASSWORD` using
+   `wrangler secret put`. The LINE email and password are Cloudflare secrets
+   and are never accepted through the admin page or stored in Durable Object
+   storage.
 4. Run `npm install` and `npm run check`. Cloudflare deployment is performed
    through the Cloudflare MCP, not GitHub Actions.
 5. Open `https://<worker-domain>/admin/login`, authenticate with the allowlisted
-   GitHub user, and scan the displayed LINE QR code. Do not expose this URL to
+   GitHub user, and begin LINE email/password login. If LINE asks for it,
+   confirm the displayed PIN in the LINE app. Do not expose this URL to
    untrusted users.
 
 Connect an MCP client to `https://<worker-domain>/mcp`. The server publishes
@@ -37,8 +41,9 @@ account.
 
 ## Operations and security
 
-- LINE credentials, QR certificates, and E2EE state are encrypted with
-  `LINE_STATE_ENCRYPTION_KEY` inside the single Durable Object.
+- LINE authentication tokens, certificates, and E2EE state are encrypted with
+  `LINE_STATE_ENCRYPTION_KEY` inside the single Durable Object. The initial
+  LINE email and password remain Cloudflare secrets.
 - Only audit metadata is stored: action, actor, time, hashed chat ID, text
   length, and outcome. Message bodies and credentials are not logged.
 - The send limit is 20 messages per 10 minutes. Confirmation tokens are bound
