@@ -17,18 +17,17 @@ draft, then consume its five-minute, one-time confirmation token.
 
 ## First deployment
 
-1. Create a Cloudflare KV namespace and replace
-   `REPLACE_WITH_OAUTH_KV_NAMESPACE_ID` in `wrangler.jsonc`. Do this for each
-   deployed environment if staging and production are separate.
-2. Replace `CHANGE_ME` with the exact GitHub login permitted to use the MCP.
-3. Create a GitHub OAuth App. Its callback URL is
+1. The required dedicated KV namespaces are already configured in
+   `wrangler.jsonc`; do not reuse them for another application.
+2. Create a GitHub OAuth App. Its callback URL is
    `https://<worker-domain>/oauth/github/callback`; the same app also secures
    `/admin/login`.
-4. Copy `.dev.vars.example` to `.dev.vars` for local development. For each
+3. Copy `.dev.vars.example` to `.dev.vars` for local development. For each
    Cloudflare environment, set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and
    `LINE_STATE_ENCRYPTION_KEY` using `wrangler secret put`.
-5. Run `npm install`, `npm run check`, then `npm run deploy:staging`.
-6. Open `https://<worker-domain>/admin/login`, authenticate with the allowlisted
+4. Run `npm install` and `npm run check`. Cloudflare deployment is performed
+   through the Cloudflare MCP, not GitHub Actions.
+5. Open `https://<worker-domain>/admin/login`, authenticate with the allowlisted
    GitHub user, and scan the displayed LINE QR code. Do not expose this URL to
    untrusted users.
 

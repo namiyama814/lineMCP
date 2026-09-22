@@ -29,11 +29,11 @@
         ]
       },
       "kv_namespaces": [
-        { "binding": "OAUTH_KV", "id": "REPLACE_WITH_STAGING_OAUTH_KV_NAMESPACE_ID" }
+        { "binding": "OAUTH_KV", "id": "8c801b4758164b4b94e92c39d2d9736b" }
       ],
       "vars": {
         "ENVIRONMENT": "staging",
-        "ALLOWED_GITHUB_LOGIN": "CHANGE_ME"
+        "ALLOWED_GITHUB_LOGIN": "namiyama814"
       }
     },
     "production": {
@@ -44,11 +44,11 @@
         ]
       },
       "kv_namespaces": [
-        { "binding": "OAUTH_KV", "id": "REPLACE_WITH_PRODUCTION_OAUTH_KV_NAMESPACE_ID" }
+        { "binding": "OAUTH_KV", "id": "6feca1f3cb144857af9ff927c6703572" }
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "ALLOWED_GITHUB_LOGIN": "CHANGE_ME"
+        "ALLOWED_GITHUB_LOGIN": "namiyama814"
       }
     }
   }
